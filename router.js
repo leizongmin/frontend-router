@@ -169,7 +169,7 @@
 
   //----------------------------------------------------------------------------
   // 解析URL参数
-  var parseQueryString = function (qs) {
+  function parseQueryString (qs) {
     var sep = '&';
     var eq = '=';
     var obj = {};
@@ -194,7 +194,7 @@
   };
 
   // 解析URL
-  var parseUrl = function (url) {
+  function parseUrl (url) {
     var ret = {};
     var qm = url.indexOf('?');
     if (qm === -1) {
@@ -208,28 +208,37 @@
   };
 
   //----------------------------------------------------------------------------
-  me.route = new Router();
+  me.router = new Router();
 
-  var fixUrl = function (url) {
-    if (url[0] !== '/') url = '/' + url;
-    return url;
-  };
+  function startWithSlash (url) {
+    return (url[0] === '/');
+  }
+
+  function fixUrl (url) {
+    return startWithSlash(url) ? url : '/' + url;
+  }
 
   // 注册全局控制器
   me.on = function (url, handle) {
     url = fixUrl(url);
-    me.route.add(url, handle);
+    me.router.add(url, handle);
+    me.debug('监听: ' + url);
   };
 
-  function onHashChange () {
-    var url = location.hash.substr(1);
-    url = parseUrl(fixUrl(url));
+  // 开始检查
+  me.check = function (url) {
+    url = url || location.hash.substr(1);
+    if (!startWithSlash(url)) {
+      me.debug('不符合要求的hash: ' + url);
+      return;
+    }
+    url = parseUrl(url);
     var ret = null;
     var i = 0;
     var c = 0;
-    while (ret = me.route.query(url.path, i)) {
+    while (ret = me.router.query(url.path, i)) {
       c++;
-      me.debug('@' + c + '转到：' + url.path);
+      me.debug('@' + c + '转到: ' + url.path);
       var obj = new HashEventObject(url, ret);
       try {
         ret.handle(obj);
@@ -240,24 +249,40 @@
       i = ret.index + 1;
     }
     if (c < 1) {
-      me.debug('没有注册的路由：' + url.path);
+      me.debug('没有注册的路由: ' + url.path);
+      // 自动跳转到首页
+      if (url.path !== '/') me.redirect('/');
     }
   };
 
-  // 监听hash变化
-  if (typeof window.addEventListener === 'function') {
-    window.addEventListener('hashchange', onHashChange);
-  } else if ('onhashchange' in window) {
-    me.debug('on IE8');
-    window.onhashchange = onHashChange;
-  } else {
-    me.debug('浏览器不支持hashchange事件');
-  }
+  // 跳转
+  me.redirect = function (url) {
+    me.debug('跳转: ' + url);
+    location.hash = fixUrl(url);
+  };
 
   // 初始化
   me.init = function () {
     me.debug('初始化');
-    onHashChange();
+    function onHashChange () {
+      me.check();
+    };
+    // 监听hash变化
+    if (typeof window.addEventListener === 'function') {
+      window.addEventListener('hashchange', onHashChange);
+    } else if ('onhashchange' in window) {
+      me.debug('on IE8');
+      window.onhashchange = onHashChange;
+    } else {
+      me.debug('浏览器不支持hashchange事件');
+    }
+    // 首次打开页面
+    if (startWithSlash(location.hash)) {
+      onHashChange();
+    } else {
+      me.debug('首次打开页面');
+      me.redirect('/');
+    }
   };
 
   //----------------------------------------------------------------------------
@@ -267,6 +292,7 @@
     this.query = url.query;
     this.params = info.value;
   };
+  HashEventObject.prototype.redirect = me.redirect;
   me.HashEventObject = HashEventObject;
 
 })(window);
