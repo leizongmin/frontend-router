@@ -250,8 +250,12 @@
     }
     if (c < 1) {
       me.debug('没有注册的路由: ' + url.path);
-      // 自动跳转到首页
-      if (url.path !== '/') me.redirect('/');
+      // 如果是首次打开页面，则自动跳转到首页
+      if (!me._hasRedirectHome) {
+        me._hasRedirectHome = true;
+        me.debug('首次打开页面，自动跳转到 /');
+        if (url.path !== '/') me.redirect('/');
+      }
     }
   };
 
@@ -282,7 +286,10 @@
     } else {
       me.debug('首次打开页面');
       me.redirect('/');
+      me._hasRedirectHome = true;
     }
+    // 设置已初始化
+    me.initialized = true;
   };
 
   //----------------------------------------------------------------------------
