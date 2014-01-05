@@ -281,7 +281,7 @@
       me.debug('浏览器不支持hashchange事件');
     }
     // 首次打开页面
-    if (startWithSlash(location.hash)) {
+    if (startWithSlash(location.hash.substr(1))) {
       onHashChange();
     } else {
       me.debug('首次打开页面');
