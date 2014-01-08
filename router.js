@@ -265,6 +265,12 @@
     location.hash = fixUrl(url);
   };
 
+  // 刷新页面
+  me.refresh = function () {
+    me.debug('刷新');
+    me.check();
+  };
+
   // 初始化
   me.init = function () {
     me.debug('初始化');
